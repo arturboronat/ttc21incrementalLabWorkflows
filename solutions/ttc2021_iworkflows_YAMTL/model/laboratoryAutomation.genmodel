@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<genmodel:GenModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    xmlns:genmodel="http://www.eclipse.org/emf/2002/GenModel" modelDirectory="/labflows_YAMTL/src/main/emf-gen" modelPluginID="labflows_YAMTL"
+    modelName="LaboratoryAutomation" rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container"
+    importerID="org.eclipse.emf.importer.ecore" minimalReflectiveMethods="false" complianceLevel="5.0"
+    copyrightFields="false" importOrganizing="true">
+  <foreignModel>laboratoryAutomation.ecore</foreignModel>
+  <genPackages prefix="LaboratoryAutomation" disposableProviderFactory="true" ecorePackage="laboratoryAutomation.ecore#/">
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="laboratoryAutomation.ecore#//SampleState">
+      <genEnumLiterals ecoreEnumLiteral="laboratoryAutomation.ecore#//SampleState/Waiting"/>
+      <genEnumLiterals ecoreEnumLiteral="laboratoryAutomation.ecore#//SampleState/Processing"/>
+      <genEnumLiterals ecoreEnumLiteral="laboratoryAutomation.ecore#//SampleState/Finished"/>
+      <genEnumLiterals ecoreEnumLiteral="laboratoryAutomation.ecore#//SampleState/Error"/>
+    </genEnums>
+    <genClasses ecoreClass="laboratoryAutomation.ecore#//Assay">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference laboratoryAutomation.ecore#//Assay/steps"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference laboratoryAutomation.ecore#//Assay/reagents"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute laboratoryAutomation.ecore#//Assay/name"/>
+    </genClasses>
+    <genClasses ecoreClass="laboratoryAutomation.ecore#//Sample">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute laboratoryAutomation.ecore#//Sample/sampleID"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute laboratoryAutomation.ecore#//Sample/state"/>
+    </genClasses>
+    <genClasses ecoreClass="laboratoryAutomation.ecore#//JobRequest">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference laboratoryAutomation.ecore#//JobRequest/assay"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference laboratoryAutomation.ecore#//JobRequest/samples"/>
+    </genClasses>
+    <genClasses image="false" ecoreClass="laboratoryAutomation.ecore#//ProtocolStep">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute laboratoryAutomation.ecore#//ProtocolStep/id"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference laboratoryAutomation.ecore#//ProtocolStep/next"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference laboratoryAutomation.ecore#//ProtocolStep/previous"/>
+    </genClasses>
+    <genClasses ecoreClass="laboratoryAutomation.ecore#//AddReagent">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute laboratoryAutomation.ecore#//AddReagent/volume"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference laboratoryAutomation.ecore#//AddReagent/reagent"/>
+    </genClasses>
+    <genClasses ecoreClass="laboratoryAutomation.ecore#//DistributeSample">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute laboratoryAutomation.ecore#//DistributeSample/volume"/>
+    </genClasses>
+    <genClasses ecoreClass="laboratoryAutomation.ecore#//Reagent">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute laboratoryAutomation.ecore#//Reagent/name"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute laboratoryAutomation.ecore#//Reagent/source"/>
+    </genClasses>
+    <genClasses ecoreClass="laboratoryAutomation.ecore#//Incubate">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute laboratoryAutomation.ecore#//Incubate/temperature"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute laboratoryAutomation.ecore#//Incubate/duration"/>
+    </genClasses>
+    <genClasses ecoreClass="laboratoryAutomation.ecore#//Wash"/>
+  </genPackages>
+</genmodel:GenModel>

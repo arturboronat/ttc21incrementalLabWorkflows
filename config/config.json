@@ -1,6 +1,12 @@
 {
-  "Tools": ["Reference", "NMF"],
+  "Tools": ["ttc2021_iworkflows_YAMTL"],
   "Scenarios": [
+  {
+	"Name": "test",
+	"Models": [
+	  "minimal"
+	]
+  },
   {
 	"Name": "scale_samples",
 	"Models": [
@@ -9,7 +15,12 @@
 	  "4",
 	  "8",
 	  "16",
-	  "32"
+	  "32",
+	  "64",
+	  "128",
+	  "256",
+	  "512",
+	  "1024"
 	]
   },
   {
@@ -31,10 +42,12 @@
 	  "4",
 	  "8",
 	  "16",
-	  "32"
+	  "32",
+	  "64",
+	  "128"
 	]
   }],
   "Sequences": 20,
-  "Runs": 5,
+  "Runs": 1,
   "Timeout": 6000
 }

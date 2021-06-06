@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<genmodel:GenModel xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore"
+    xmlns:genmodel="http://www.eclipse.org/emf/2002/GenModel" modelDirectory="/labflows_YAMTL/src/main/emf-gen" modelPluginID="labflows_YAMTL"
+    modelName="JobCollection" rootExtendsClass="org.eclipse.emf.ecore.impl.MinimalEObjectImpl$Container"
+    importerID="org.eclipse.emf.importer.ecore" minimalReflectiveMethods="false" complianceLevel="5.0"
+    copyrightFields="false" importOrganizing="true">
+  <foreignModel>jobCollection.ecore</foreignModel>
+  <genPackages prefix="JobCollection" disposableProviderFactory="true" ecorePackage="jobCollection.ecore#/">
+    <genEnums typeSafeEnumCompatible="false" ecoreEnum="jobCollection.ecore#//JobStatus">
+      <genEnumLiterals ecoreEnumLiteral="jobCollection.ecore#//JobStatus/Planned"/>
+      <genEnumLiterals ecoreEnumLiteral="jobCollection.ecore#//JobStatus/Executing"/>
+      <genEnumLiterals ecoreEnumLiteral="jobCollection.ecore#//JobStatus/Succeeded"/>
+      <genEnumLiterals ecoreEnumLiteral="jobCollection.ecore#//JobStatus/Failed"/>
+    </genEnums>
+    <genClasses ecoreClass="jobCollection.ecore#//JobCollection">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference jobCollection.ecore#//JobCollection/labware"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference jobCollection.ecore#//JobCollection/jobs"/>
+    </genClasses>
+    <genClasses ecoreClass="jobCollection.ecore#//LiquidTransferJob">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference jobCollection.ecore#//LiquidTransferJob/target"/>
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference jobCollection.ecore#//LiquidTransferJob/tips"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference jobCollection.ecore#//LiquidTransferJob/source"/>
+    </genClasses>
+    <genClasses ecoreClass="jobCollection.ecore#//Labware">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute jobCollection.ecore#//Labware/name"/>
+    </genClasses>
+    <genClasses ecoreClass="jobCollection.ecore#//Trough"/>
+    <genClasses ecoreClass="jobCollection.ecore#//Microplate"/>
+    <genClasses ecoreClass="jobCollection.ecore#//TubeRunner">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute jobCollection.ecore#//TubeRunner/barcodes"/>
+    </genClasses>
+    <genClasses ecoreClass="jobCollection.ecore#//TipLiquidTransfer">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute jobCollection.ecore#//TipLiquidTransfer/sourceCavityIndex"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute jobCollection.ecore#//TipLiquidTransfer/volume"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute jobCollection.ecore#//TipLiquidTransfer/targetCavityIndex"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute jobCollection.ecore#//TipLiquidTransfer/status"/>
+    </genClasses>
+    <genClasses image="false" ecoreClass="jobCollection.ecore#//Job">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute jobCollection.ecore#//Job/state"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute jobCollection.ecore#//Job/protocolStepName"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference jobCollection.ecore#//Job/previous"/>
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference jobCollection.ecore#//Job/next"/>
+    </genClasses>
+    <genClasses ecoreClass="jobCollection.ecore#//WashJob">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference jobCollection.ecore#//WashJob/microplate"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute jobCollection.ecore#//WashJob/cavities"/>
+    </genClasses>
+    <genClasses ecoreClass="jobCollection.ecore#//IncubateJob">
+      <genFeatures notify="false" createChild="false" propertySortChoices="true" ecoreFeature="ecore:EReference jobCollection.ecore#//IncubateJob/microplate"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute jobCollection.ecore#//IncubateJob/temperature"/>
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute jobCollection.ecore#//IncubateJob/duration"/>
+    </genClasses>
+  </genPackages>
+</genmodel:GenModel>

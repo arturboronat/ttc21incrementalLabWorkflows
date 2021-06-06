@@ -1,0 +1,11 @@
+<aspectj>
+    <aspects>
+        <aspect name="ttc2021.iworkflows.FeatureCallAspect_iWorkflows"/> <!-- TTC 2021 -->
+    </aspects>
+    <weaver options="-nowarn"> 
+    <!--  weaver options="-verbose -showWeaveInfo" --> <!-- add -debug to print every class [not] woven  -->
+        <include within="yamtl..*"/> 
+        <include within="org.eclipse.emf.ecore..*"/> 
+        <include within="laboratoryAutomation..*"/> <!-- TTC 2021 -->
+    </weaver>    
+</aspectj>
