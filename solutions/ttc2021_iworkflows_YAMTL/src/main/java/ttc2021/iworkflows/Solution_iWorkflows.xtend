@@ -172,18 +172,8 @@ rule('job').isAbstract.toMany
 		val out_jobCollection = in_jobRequest.fetch('out_jobCollection', 'jobRequest_->_jobCollection') as JobCollection
 		out_jobCollection.jobs.add(out_job)
 		
-		val prev_step = in_step.previous
-		if (in_step.previous !== null) {
-			val maybe_list = prev_step.fetch()
-		
-			if (maybe_list!==null) {
-				if (maybe_list instanceof List) {
-					out_job.previous.add(maybe_list.head)	
-				} else {
-					out_job.previous.add(maybe_list as Job)	
-				}
-			}
-		}
+		if (in_step.previous !== null)
+			out_job.previous.add(in_step.previous.fetch() as Job)	
 	],
 
 
