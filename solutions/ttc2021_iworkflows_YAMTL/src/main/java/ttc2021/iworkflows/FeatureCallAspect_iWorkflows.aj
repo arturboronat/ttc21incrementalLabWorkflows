@@ -71,45 +71,4 @@ public class FeatureCallAspect_iWorkflows {
 		module.featureGetCall_reduce_variants(thisJoinPoint);
 	}
 
-
-/**
-* To track dependencies in output objects only.
-* 
-* Uncomment as required by the use case.
-* 
-*/
-//@After("cflowbelow(controlFlowReduceScope()) && syntacticScope() && target(org.eclipse.emf.ecore.EObject) && execution(* *..set* (..))")
-//public void featureSetCallInReduce(JoinPoint thisJoinPoint) {
-//if (
-//(module.executionMode == ExecutionMode.INCREMENTAL)
-//|| 
-//(module.executionMode == ExecutionMode.PROPAGATION)
-//) {
-//if (module.incrementalGranularity == IncrementalGranularity.TRAFO_STEP) {
-//module.featureSetCallInReduce(thisJoinPoint);
-//}
-//}
-//}
-//	
-//@After("within(java.util.*) && (cflowbelow(controlFlowReduceScope()) ) && syntacticScope() && target(java.util.Collection) "
-//+ "&& ("
-//+ "call(* java.util.Collection.add(..)) || "
-//+ "call(* java.util.Collection.addAll(..)) ||"
-//+ "call(* java.util.Collection.remove(..)) ||"
-//+ "call(* java.util.Collection.removeAll(..)) ||"
-//+ "call(* java.util.Collection.clear(..)) ||"
-//+ "call(* java.util.Collection.retainAll(..))"
-//+ ")") 
-//public void collectionModification(JoinPoint thisJoinPoint) {
-//if (module != null) {
-//module.collectionModification(thisJoinPoint);
-//}
-//}
-
-//	@Pointcut("within(yamtl.core.YAMTLModule) && execution(* propagateDelta(..))")
-//	private void controlFlowPropagateDeltaScope() {}		
-//	@After("cflowbelow(controlFlowPropagateDeltaScope()) && target(org.eclipse.emf.ecore.change.impl.FeatureChangeImpl) && execution(* *..process(org.eclipse.emf.ecore.EObject,boolean,boolean))") // get(* *)
-//	public void testSetInFeatureChangeImpl(JoinPoint thisJoinPoint) {
-//		module.changeAnalysis(thisJoinPoint);
-//	}
 }

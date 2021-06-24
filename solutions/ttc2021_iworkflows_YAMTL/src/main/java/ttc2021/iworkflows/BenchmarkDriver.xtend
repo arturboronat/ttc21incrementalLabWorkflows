@@ -84,21 +84,21 @@ class BenchmarkDriver {
         Report(BenchmarkPhase.Load, -1, String.valueOf(stopwatch));
 
 		solution.adaptInputModel('lab')
-		solution.changeSpecification = 
-			#{
-				solution.LAB.sample -> #{
-					'change sample state' -> #{
-						'state' -> (
-							YAMTLChangeType.UPDATE -> YAMTLModule.FEATURE_CHANGE_TRIVIAL_CHECK
-						) 
-					},
-					'add sample' -> #{
-						'' -> (
-							YAMTLChangeType.ADD -> YAMTLModule.FEATURE_CHANGE_TRIVIAL_CHECK
-						) 
-					}
-				}
-			} // as Map<EClass,Map<String,Map<String,Pair<YAMTLChangeType,(EObject,Object)=>boolean>>>>
+//		solution.changeSpecification = 
+//			#{
+//				solution.LAB.sample -> #{
+//					'change sample state' -> #{
+//						'state' -> (
+//							YAMTLChangeType.UPDATE -> YAMTLModule.FEATURE_CHANGE_TRIVIAL_CHECK
+//						) 
+//					},
+//					'add sample' -> #{
+//						'' -> (
+//							YAMTLChangeType.ADD -> YAMTLModule.FEATURE_CHANGE_TRIVIAL_CHECK
+//						) 
+//					}
+//				}
+//			} // as Map<EClass,Map<String,Map<String,Pair<YAMTLChangeType,(EObject,Object)=>boolean>>>>
     }
 
 
@@ -110,6 +110,9 @@ class BenchmarkDriver {
 		solution.execute()
 		
         stopwatch = System.nanoTime() - stopwatch;
+        
+        solution.saveOutputModels(#{'job' -> '''«ModelPath»/results/initialResult-YAMTL.xmi'''})
+        
         Report(BenchmarkPhase.Initial, -1, String.valueOf(stopwatch));
     }
 
@@ -131,6 +134,9 @@ class BenchmarkDriver {
 		solution.propagateDelta('lab')
 
         stopwatch = System.nanoTime() - stopwatch;
+        
+        solution.saveOutputModels(#{'job' -> '''«ModelPath»/results/«changeName»Result-YAMTL.xmi'''})
+        
         Report(BenchmarkPhase.Update, iteration, String.valueOf(stopwatch));
     }
 

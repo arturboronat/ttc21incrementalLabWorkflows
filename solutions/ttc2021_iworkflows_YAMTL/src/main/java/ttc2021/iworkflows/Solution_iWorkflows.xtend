@@ -3,7 +3,6 @@ package ttc2021.iworkflows
 import java.io.BufferedReader
 import java.io.FileInputStream
 import java.io.InputStreamReader
-import java.util.List
 import java.util.Map
 import jobCollection.IncubateJob
 import jobCollection.Job
@@ -26,14 +25,11 @@ import laboratoryAutomation.Reagent
 import laboratoryAutomation.Sample
 import laboratoryAutomation.SampleState
 import laboratoryAutomation.Wash
-import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.xtend.lib.annotations.Accessors
 import yamtl.core.YAMTLModule
-import yamtl.incremental.ChangeDescriptionAnalysisUtil.YAMTLChangeType
 
 import static yamtl.dsl.Rule.*
-import static yamtl.dsl.Helper.*
 
 class Solution_iWorkflows extends YAMTLModule  {
 	@Accessors
@@ -43,6 +39,7 @@ class Solution_iWorkflows extends YAMTLModule  {
 	val JOB = JobCollectionPackage.eINSTANCE
 	
 	val TUBE_RUNNER_CAPACITY = 16
+	val TIP_CAVITIES = 8
 	val MICROPLATE_CAPACITY = 96
 	
 	new() {
@@ -53,23 +50,23 @@ rule('jobRequest_->_jobCollection')
 	.in('in_jobRequest', LAB.jobRequest)
 	.out('out_jobCollection', JOB.jobCollection),
 
-rule('jobRequest_->_tubeRunner').priority(0).toMany
-	.in('jobRequest', LAB.jobRequest).filter [
-		matchCount <= max_count(jobRequest.samples.size, TUBE_RUNNER_CAPACITY)
+rule('jobRequest_->_tubeRunner').toMany
+	.in('jobRequest', LAB.jobRequest)
+	.toManyCap[
+		max_count(jobRequest.samples.size, TUBE_RUNNER_CAPACITY)
 	]
 	.out('tubeRunner', JOB.tubeRunner)[
 		val out_jobCollection = jobRequest.fetch('out_jobCollection', 'jobRequest_->_jobCollection') as JobCollection
 		
 		var tubeRunner_list = out_jobCollection.labware.filter[ it instanceof TubeRunner ]
-		tubeRunner.name = String.format('''TubeRunner%02d''', tubeRunner_list.size)
+		tubeRunner.name = String.format('''TubeRunner%02d''', tubeRunner_list.size + 1)
 		out_jobCollection.labware.add(tubeRunner)
 	],
 	
 
-rule('jobRequest_->_microplate').priority(0).toMany
-	.in('jobRequest', LAB.jobRequest).filter [
-		matchCount <= max_count(jobRequest.samples.size, MICROPLATE_CAPACITY)
-	]
+rule('jobRequest_->_microplate').toMany
+	.in('jobRequest', LAB.jobRequest)
+	.toManyCap[max_count(jobRequest.samples.size, MICROPLATE_CAPACITY)]
 	.out('microplate', JOB.microplate)[
 		val out_jobCollection = jobRequest.fetch('out_jobCollection', 'jobRequest_->_jobCollection') as JobCollection
 		var microplate_list = out_jobCollection.labware.filter[ it instanceof Microplate]
@@ -78,25 +75,25 @@ rule('jobRequest_->_microplate').priority(0).toMany
 	],
 	
 
-rule('sample_->_allocation').priority(0).transient
+rule('sample_->_allocation').transient
 	.in('in_sample', LAB.sample).filter [
 		in_sample.state == SampleState.WAITING
 	]
 	.out('out_aux', JOB.jobCollection)[
 		val in_jobRequest = in_sample.eContainer as JobRequest
-		
 		val tubeRunnerNumber = getTubeRunner_number(in_jobRequest, in_sample)
 		val tubeRunner = in_jobRequest.fetch('tubeRunner', 'jobRequest_->_tubeRunner', tubeRunnerNumber) as TubeRunner
 		tubeRunner.barcodes += in_sample.sampleID
-		
 		val microplateNumber = getMicroplate_number(in_jobRequest, in_sample) 
 		val microplateCavity = getMicroplate_cavity(in_jobRequest, in_sample)
 		val microplate = in_jobRequest.fetch('microplate', 'jobRequest_->_microplate', microplateNumber) as Microplate
-		
+
 		// to facilitate backward propagation, which is external to YAMTL
+		// track how to retrieve sample from its cavity on a microplate
 		backward_insert(microplate.name, microplateCavity, in_sample)
 		
 	].undo[
+		
 		val in_jobRequest = in_sample.eContainer as JobRequest
 		val microplateNumber = getMicroplate_number(in_jobRequest, in_sample)
 		val microplateCavity = getMicroplate_cavity(in_jobRequest, in_sample)
@@ -122,13 +119,12 @@ rule('tipCreation')
 		(in_step instanceof DistributeSample || in_step instanceof AddReagent)
 	]
 	.out('out_tip', JOB.tipLiquidTransfer) [
-		// to avoid fetching values from store several times, use variables
 		val step = in_step 
 		val tip = out_tip
 		
 		val in_jobRequest = step.eContainer.eContainer as JobRequest
-		val matchCount = ltjMatchCount(step, in_sample)
-		val out_job = step.fetch('out_job', 'job', matchCount) as LiquidTransferJob
+		val occurrence = getTipContainerIndex(in_jobRequest, in_sample)
+		val out_job = step.fetch(occurrence) as LiquidTransferJob
 
 		switch(step) {
 			DistributeSample: {
@@ -153,8 +149,9 @@ rule('tipCreation')
 		out_job.tips.add(tip)
 	].undo[
 		// SET CONTAINER
-		val occurrence = ltjMatchCount(in_step, in_sample)
-		val out_job = in_step.fetch('out_job', 'job', occurrence) as LiquidTransferJob
+		val in_jobRequest = in_step.eContainer.eContainer as JobRequest
+		val occurrence = getTipContainerIndex(in_jobRequest, in_sample)
+		val out_job = in_step.fetch(occurrence) as LiquidTransferJob
 		out_job.tips.remove(out_tip)
 	],			
 
@@ -182,8 +179,7 @@ rule('tipContainer').isAbstract.toMany
 	.inheritsFrom(#['job'])
 	.in('in_step', LAB.protocolStep).filter[
 		(in_step instanceof DistributeSample || 
-		in_step instanceof AddReagent) &&
-		matchCount <= max_count(sampleCount,MICROPLATE_CAPACITY)
+		in_step instanceof AddReagent)
 	]
 	.out('out_job', JOB.job),
 	
@@ -191,11 +187,13 @@ rule('tipContainer').isAbstract.toMany
 rule('distributeSample').toMany
 	.inheritsFrom(#['tipContainer'])
 	.in('in_step', LAB.distributeSample)
+	.toManyCap[max_count(sampleCount,TIP_CAVITIES)]
 	.out('out_job', JOB.liquidTransferJob),			
 	
 rule('addReagent').toMany
 	.inheritsFrom(#['tipContainer'])
 	.in('in_step', LAB.addReagent)
+	.toManyCap[max_count(sampleCount,TIP_CAVITIES)]
 	.out('out_job', JOB.liquidTransferJob),		
 	
 	
@@ -206,14 +204,14 @@ rule('plateJobs').isAbstract.toMany
 	.inheritsFrom(#['job'])
 	.in('in_step', LAB.protocolStep).filter[
 		(in_step instanceof Wash || 
-		in_step instanceof Incubate) &&
-		matchCount <= max_count(sampleCount, MICROPLATE_CAPACITY)
+		in_step instanceof Incubate)
 	]
 	.out('out_job', JOB.job),	
 	
 rule('wash').toMany
 	.inheritsFrom(#['plateJobs'])
 	.in('in_step', LAB.wash)
+	.toManyCap[max_count(sampleCount, MICROPLATE_CAPACITY)]
 	.out('out_job', JOB.washJob) [
 		val out_job = out_job_WashJob // set to vble to avoid fetching several times
 		
@@ -224,11 +222,13 @@ rule('wash').toMany
 		val end = sampleCount - 1
 		for (i: start..end) 
 			out_job.cavities += i % MICROPLATE_CAPACITY
+		
 	],
 	
 rule('incubate').toMany
 	.inheritsFrom(#['plateJobs'])
 	.in('in_step', LAB.incubate)
+	.toManyCap[max_count(sampleCount, MICROPLATE_CAPACITY)]
 	.out('out_job', JOB.incubateJob) [
 		val in_step = in_step_Incubate
 		val out_job = out_job_IncubateJob
@@ -244,29 +244,19 @@ rule('incubate').toMany
 	
 		])
 		
-		
-		helperStore(#[
-			staticAttribute('sampleCount') [
-				val rootJobRequest = this.getModelResource('lab').contents.head as JobRequest
-				return rootJobRequest.samples.size
-			]
-		])
-		
 	}
 	
-	def ltjMatchCount(ProtocolStep in_step, Sample in_sample) {
-		val in_jobRequest = in_step.eContainer.eContainer as JobRequest
-		val sample_index = in_jobRequest.samples.indexOf(in_sample)
-		val result = (sample_index / MICROPLATE_CAPACITY)
-		result 
-		 
+	
+	def sampleCount() {
+		val rootJobRequest = this.getModelResource('lab').contents.head as JobRequest
+		return rootJobRequest.samples.size
 	}
-
+	
 	def max_count(int divident, int divisor) {
-				if (divident % divisor == 0)
-					(divident / divisor) - 1
-				else
-					(divident / divisor) 
+		if (divident % divisor == 0)
+			(divident / divisor)
+		else
+			(divident / divisor) + 1 
 	}
 
 	def getMicroplateFromMatchCount(ProtocolStep in_step, int matchCount) {
@@ -282,6 +272,14 @@ rule('incubate').toMany
 		return microplate
 	}
 	
+	def getTipContainerIndex(JobRequest in_jobRequest, Sample in_sample) {
+		val sample_index = in_jobRequest.samples.indexOf(in_sample)
+		return (sample_index / TIP_CAVITIES)
+	}
+	def getTipIndex(JobRequest in_jobRequest, Sample in_sample) {
+		val sample_index = in_jobRequest.samples.indexOf(in_sample)
+		return ((sample_index % MICROPLATE_CAPACITY) % TIP_CAVITIES)
+	}
 	def getMicroplate_number(JobRequest in_jobRequest, Sample in_sample) {
 		val sample_index = in_jobRequest.samples.indexOf(in_sample)
 		return (sample_index / MICROPLATE_CAPACITY) 
@@ -334,7 +332,6 @@ rule('incubate').toMany
 			switch (changeItemList.size) {
 				case 2: { 
 					// adding new sample in input model
-
 					val taskName = changeItemList.get(0)
 					if (taskName == 'NewSample') {
 						val sampleName = changeItemList.get(1)
@@ -352,14 +349,18 @@ rule('incubate').toMany
 					}
 				}
 				case 3: {
+					// backpropagation of sample status to input model
+					
 					val jobName = changeItemList.get(0)
 					val microplateName = changeItemList.get(1)
 					val sampleStatusString = changeItemList.get(2)
 					
-					
+//					println('''applyChange::processing «jobName» - «microplateName» - «sampleStatusString»''')
 					val job = out_jobCollection.jobs.findFirst[it.protocolStepName == jobName]
+//					println('''applyChange::processing «jobName» - «microplateName» - «sampleStatusString» --> job: «job.toString»''')
 					switch (job) {
 						LiquidTransferJob: {
+//							println('''BACKWARD PROPAGATION: «jobName» - «microplateName»:''')
 							// the status of samples may vary from cavity to cavity
 							val sampleStatusArray = sampleStatusString.toCharArray
 							for (i: 1..sampleStatusArray.size) {
@@ -372,8 +373,10 @@ rule('incubate').toMany
 									} else {
 										if (status.equals(Character.valueOf('S'))) {
 //											sample.state = SampleState.FINISHED
+//											println('''	«i» -> changing state of «sample» to «sample.state»''')
 										} else if (status.equals(Character.valueOf('F'))) {
 											sample.state = SampleState.ERROR										
+//											println('''	«microplateName»[«i»] -> changing state of «sample.sampleID» to «sample.state»''')
 										}
 									}
 									
@@ -382,7 +385,6 @@ rule('incubate').toMany
 						}
 						IncubateJob: {
 							// TODO these changes make sense if the benchmark contained job status F
-							
 							
 //							// all samples allocated to a microplate are marked as either FINISHED or ERROR
 //							val cavityToSamples = backward_microplate_cavity_to_sample.get(microplateName)
@@ -499,7 +501,4 @@ rule('incubate').toMany
 	def out_job_IncubateJob() {
 	  'out_job'.fetch() as IncubateJob
 	} 
-	def sampleCount() {
-		'sampleCount'.fetch() as Integer
-	}
 }
