@@ -50,6 +50,9 @@ rule('jobRequest_->_jobCollection')
 	.in('in_jobRequest', LAB.jobRequest)
 	.out('out_jobCollection', JOB.jobCollection),
 
+/*
+ * LABWARE
+ */
 rule('jobRequest_->_tubeRunner').toMany
 	.in('jobRequest', LAB.jobRequest)
 	.toManyCap[
@@ -74,7 +77,19 @@ rule('jobRequest_->_microplate').toMany
 		out_jobCollection.labware.add(microplate)
 	],
 	
-
+rule('reagent_->_trough')
+	.in('in_reagent', LAB.reagent)
+	.out('out_trough', JOB.trough) [
+		val in_jobRequest = in_reagent.eContainer.eContainer as JobRequest
+		val out_jobCollection = in_jobRequest.fetch('out_jobCollection', 'jobRequest_->_jobCollection') as JobCollection
+		out_trough.name = in_reagent.name
+		out_jobCollection.labware.add(out_trough)
+	],
+	
+	
+/*
+ * ALLOCATION
+ */
 rule('sample_->_allocation').transient
 	.in('in_sample', LAB.sample).filter [
 		in_sample.state == SampleState.WAITING
@@ -101,15 +116,49 @@ rule('sample_->_allocation').transient
 		microplate_cavity_to_sample.get(microplate.name).remove(microplateCavity)
 	],
 
-rule('reagent_->_trough')
-	.in('in_reagent', LAB.reagent)
-	.out('out_trough', JOB.trough) [
-		val in_jobRequest = in_reagent.eContainer.eContainer as JobRequest
-		val out_jobCollection = in_jobRequest.fetch('out_jobCollection', 'jobRequest_->_jobCollection') as JobCollection
-		out_trough.name = in_reagent.name
-		out_jobCollection.labware.add(out_trough)
+
+
+
+
+
+rule('job').isAbstract.toMany
+	.in('in_step', LAB.protocolStep)
+	.out('out_job', JOB.job) [
+		out_job.protocolStepName = in_step.id
+		// set container	
+		val in_jobRequest = in_step.eContainer.eContainer as JobRequest
+		val out_jobCollection = in_jobRequest
+			.fetch('out_jobCollection', 'jobRequest_->_jobCollection') as JobCollection
+		out_jobCollection.jobs.add(out_job)
+		
+		if (in_step.previous !== null)
+			out_job.previous.add(in_step.previous.fetch() as Job)	
 	],
 
+
+/*
+ * PROCESS LIQUID TRANSFER JOBS
+ */
+rule('tipContainer').isAbstract.toMany
+	.inheritsFrom(#['job'])
+	.in('in_step', LAB.protocolStep).filter[
+		(in_step instanceof DistributeSample || 
+		in_step instanceof AddReagent)
+	]
+	.out('out_job', JOB.job),	
+	
+rule('distributeSample').toMany
+	.inheritsFrom(#['tipContainer'])
+	.in('in_step', LAB.distributeSample)
+	.toManyCap[max_count(sampleCount,TIP_CAVITIES)]
+	.out('out_job', JOB.liquidTransferJob),			
+	
+rule('addReagent').toMany
+	.inheritsFrom(#['tipContainer'])
+	.in('in_step', LAB.addReagent)
+	.toManyCap[max_count(sampleCount,TIP_CAVITIES)]
+	.out('out_job', JOB.liquidTransferJob),		
+	
 
 rule('tipCreation')
 	.in('in_sample', LAB.sample).filter[
@@ -154,52 +203,11 @@ rule('tipCreation')
 		val out_job = in_step.fetch(occurrence) as LiquidTransferJob
 		out_job.tips.remove(out_tip)
 	],			
-
-
-
-
-
-
-rule('job').isAbstract.toMany
-	.in('in_step', LAB.protocolStep)
-	.out('out_job', JOB.job) [
-		out_job.protocolStepName = in_step.id
-		// set container	
-		val in_jobRequest = in_step.eContainer.eContainer as JobRequest
-		val out_jobCollection = in_jobRequest.fetch('out_jobCollection', 'jobRequest_->_jobCollection') as JobCollection
-		out_jobCollection.jobs.add(out_job)
-		
-		if (in_step.previous !== null)
-			out_job.previous.add(in_step.previous.fetch() as Job)	
-	],
-
-
-
-rule('tipContainer').isAbstract.toMany
-	.inheritsFrom(#['job'])
-	.in('in_step', LAB.protocolStep).filter[
-		(in_step instanceof DistributeSample || 
-		in_step instanceof AddReagent)
-	]
-	.out('out_job', JOB.job),
 	
-	
-rule('distributeSample').toMany
-	.inheritsFrom(#['tipContainer'])
-	.in('in_step', LAB.distributeSample)
-	.toManyCap[max_count(sampleCount,TIP_CAVITIES)]
-	.out('out_job', JOB.liquidTransferJob),			
-	
-rule('addReagent').toMany
-	.inheritsFrom(#['tipContainer'])
-	.in('in_step', LAB.addReagent)
-	.toManyCap[max_count(sampleCount,TIP_CAVITIES)]
-	.out('out_job', JOB.liquidTransferJob),		
-	
-	
-	
-	
-	
+/*
+ * PROCESS PLATE JOBS
+ */
+
 rule('plateJobs').isAbstract.toMany
 	.inheritsFrom(#['job'])
 	.in('in_step', LAB.protocolStep).filter[
